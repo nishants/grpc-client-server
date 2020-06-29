@@ -76,7 +76,34 @@ macOS doesn't support ASP.NET Core gRPC with TLS. Additional configuration is re
   dotnet add dotnet-client.csproj package Google.Protobuf
   dotnet add dotnet-client.csproj package Grpc.Tools
   ```
+	This updates the projects csproj file as : 
+  ```diff
+  +  <ItemGroup>
+  +    <PackageReference Include="Google.Protobuf" Version="3.12.3" />
+  +    <PackageReference Include="Grpc.Net.Client" Version="2.29.0" />
+  +    <PackageReference Include="Grpc.Tools" Version="2.30.0">
+  +      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  +      <PrivateAssets>all</PrivateAssets>
+  +    </PackageReference>
+  +  </ItemGroup>
+  +
+  ```
 
   
 
-- Add nuggets
+- Add proto files for cleint
+
+  ```
+  cp -r ../dotnet-service/Protos ./
+  ```
+
+  Update the csproj file to include proto in project : 
+
+  ```diff
+  + <ItemGroup>
+  +   <Protobuf Include="Protos\greet.proto" GrpcServices="Client" />
+  + </ItemGroup>
+  ```
+
+  
+
