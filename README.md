@@ -112,27 +112,29 @@ macOS doesn't support ASP.NET Core gRPC with TLS. Additional configuration is re
   ```protobuf
   syntax = "proto3";
   
+  ```
+
 // This is the namespace for which client will be generated
   option csharp_namespace = "GrpcGreeter";
-  
+
   package greet;
-  
+
   // The greeting service definition.
   service Greeter {
     // Sends a greeting
     rpc SayHello (HelloRequest) returns (HelloReply);
   }
-  
+
   // The request message containing the user's name.
   message HelloRequest {
     string name = 1;
   }
-  
+
   // The response message containing the greetings.
   message HelloReply {
     string message = 1;
   }
-  
+
   ```
   
   
@@ -193,3 +195,75 @@ macOS doesn't support ASP.NET Core gRPC with TLS. Additional configuration is re
   ```
 
   
+
+
+
+### Deploy server on Azure App Service
+
+- resource: https://docs.microsoft.com/en-us/aspnet/core/tutorials/publish-to-azure-webapp-using-vscode?view=aspnetcore-3.1
+
+- Install the app service extension for vscode : 
+
+  ![image-20200705173232160](./docs/images/app-service-extension.png)
+
+- Create a release package to a folder called release: 
+
+  ```bash
+  dotnet publish -c Release -o ./publish
+  
+  ```
+
+  
+
+- now click on the publish folder and choose `Deploy to web app`
+
+  ![image-20200705173404999](/Users/dawn/Documents/projects/grpc-stub/docs/images/deploy-to-webapp-context-menu.png)
+
+- naem : `grpc-server`
+
+- notice on bottom right the notifications showign progress of the webapp creation.
+
+- the app service does not support gRPC ` `:  https://github.com/dotnet/aspnetcore/issues/9020
+
+  ```
+  The HTTP/2 implementation of Http.Sys does not support HTTP response trailing headers which gRPC relies on.
+  ```
+
+  
+
+  
+
+  ###  Run server on AKS 
+
+  - Dockerize our app : 
+  
+    ```dockerfile
+    # Stage 1: Build project into
+    FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
+    WORKDIR /source
+    
+    COPY *.csproj .
+    RUN dotnet restore
+    
+    COPY . .
+    RUN dotnet build
+    RUN dotnet publish -c release -o /app --no-restore
+    
+    # Stage 2: run project
+    FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
+    WORKDIR /app
+    EXPOSE 80
+    
+    COPY --from=build /app .
+    ENTRYPOINT ["dotnet", "dotnet-service.dll"]
+    ```
+  
+    
+  
+  - build and test docker image : 
+  
+    ```
+    docker build -t grpc-server . && dodcker run -p 5000:80 grpc-server
+    ```
+  
+    
