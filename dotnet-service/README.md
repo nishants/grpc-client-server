@@ -105,5 +105,91 @@ macOS doesn't support ASP.NET Core gRPC with TLS. Additional configuration is re
   + </ItemGroup>
   ```
 
+- Create a Greeter client
+
+- Add the options for namespace in the proto file : 
+
+  ```protobuf
+  syntax = "proto3";
+  
+// This is the namespace for which client will be generated
+  option csharp_namespace = "GrpcGreeter";
+  
+  package greet;
+  
+  // The greeting service definition.
+  service Greeter {
+    // Sends a greeting
+    rpc SayHello (HelloRequest) returns (HelloReply);
+  }
+  
+  // The request message containing the user's name.
+  message HelloRequest {
+    string name = 1;
+  }
+  
+  // The response message containing the greetings.
+  message HelloReply {
+    string message = 1;
+  }
+  
+  ```
+  
+  
+  
+- Run command `dotnet run build`, which will create the Greeter implementation using protofile in namespace `GrpcGreeter` as defined above.
+
+- Now use this generated namespace in the Program.cs to make a call : 
+
+  ```c#
+  using System;
+  using System.Net.Http;
+  using System.Threading.Tasks;
+  using GrpcGreeter;
+  using Grpc.Net.Client;
+  
+  namespace GrpcGreeterClient
+  {
+    class Program
+    {
+      static async Task Main(string[] args)
+      {
+        using var channel = GrpcChannel.ForAddress("http://localhost:5000");
+        var client =  new Greeter.GreeterClient(channel);
+        var reply = await client.SayHelloAsync(
+                new HelloRequest { Name = "GreeterClient" });
+        Console.WriteLine("Greeting: " + reply.Message);
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadKey();
+      }
+    }
+  }
+  ```
+
   
 
+- Expect following error on dotnet run 
+
+  ```yml
+  Unhandled exception. Grpc.Core.RpcException: Status(StatusCode=Internal, Detail="Error starting gRPC call. HttpRequestException: An error occurred while sending the request. IOException: The response ended prematurely.")
+     at GrpcGreeterClient.Program.Main(String[] args) in /Users/dawn/Documents/projects/grpc-stub/dotnet-client/Program.cs:line 18
+     at GrpcGreeterClient.Program.<Main>(String[] args)
+  ```
+
+  This error occurs because our server is using HTTP2 without 
+
+  To fix this, Enable the HTTP2 without SSL for the server : 
+
+  ```c#
+  AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+  ```
+
+  
+
+- now run command : `dotnet run `
+
+  ```
+  
+  ```
+
+  
